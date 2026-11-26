@@ -10,6 +10,13 @@ const adminAdsList = document.getElementById("adminAdsList");
 const adminProductsList = document.getElementById("adminProductsList");
 const adminStatus = document.getElementById("adminStatus");
 
+const topPromoBanner = document.getElementById("topPromoBanner");
+const promoBadge = document.getElementById("promoBadge");
+const promoText = document.getElementById("promoText");
+
+const searchProductInput = document.getElementById("searchProductInput");
+const categoryFilter = document.getElementById("categoryFilter");
+
 const ghOwnerInput = document.getElementById("ghOwner");
 const ghRepoInput = document.getElementById("ghRepo");
 const ghBranchInput = document.getElementById("ghBranch");
@@ -47,7 +54,6 @@ function loadGhMeta() {
   }
 }
 
-// تحويل نص UTF-8 إلى Base64 بشكل آمن مع الحروف العربية
 function utf8ToBase64(str) {
   const bytes = new TextEncoder().encode(str);
   let binary = "";
@@ -57,7 +63,6 @@ function utf8ToBase64(str) {
   return btoa(binary);
 }
 
-// تحويل Base64 إلى نص UTF-8
 function base64ToUtf8(base64) {
   const clean = base64.replace(/\n/g, "");
   const binary = atob(clean);
@@ -76,10 +81,32 @@ function escapeHTML(value) {
     .replace(/"/g, "&quot;");
 }
 
-function renderPublicView() {
-  const activeAds = (currentData.ads || []).filter((ad) => ad.active !== false);
+function populateCategoryOptions() {
+  const previous = categoryFilter.value || "ALL";
+  const categories = [...new Set((currentData.products || []).map((p) => (p.category || "عام").trim()))];
+
+  categoryFilter.innerHTML = `<option value="ALL">كل التصنيفات</option>` +
+    categories.map((cat) => `<option value="${escapeHTML(cat)}">${escapeHTML(cat)}</option>`).join("");
+
+  if ([...categoryFilter.options].some((opt) => opt.value === previous)) {
+    categoryFilter.value = previous;
+  } else {
+    categoryFilter.value = "ALL";
+  }
+}
+
+function renderPromoAndAds(activeAds) {
+  if (activeAds.length > 0) {
+    const firstAd = activeAds[0];
+    promoBadge.textContent = firstAd.badge || "إعلان";
+    promoText.textContent = `${firstAd.title} — ${firstAd.description}`;
+    topPromoBanner.classList.remove("hidden");
+  } else {
+    topPromoBanner.classList.add("hidden");
+  }
+
   if (activeAds.length === 0) {
-    adsContainer.innerHTML = `<p style="color:#9ca3af">لا توجد إعلانات نشطة حالياً.</p>`;
+    adsContainer.innerHTML = `<p class="muted">لا توجد إعلانات نشطة حالياً.</p>`;
   } else {
     adsContainer.innerHTML = activeAds
       .map(
@@ -87,35 +114,59 @@ function renderPublicView() {
       <article class="ad-card">
         <span class="badge">${escapeHTML(ad.badge || "إعلان")}</span>
         <h3>${escapeHTML(ad.title)}</h3>
-        <p style="color:#9ca3af;margin-top:6px;font-size:14px;">${escapeHTML(ad.description)}</p>
+        <p class="muted" style="margin-top:6px;">${escapeHTML(ad.description)}</p>
       </article>
     `
       )
       .join("");
   }
+}
 
-  const products = currentData.products || [];
-  if (products.length === 0) {
-    productsContainer.innerHTML = `<p style="color:#9ca3af">لا توجد منتجات مضافة حالياً.</p>`;
-  } else {
-    productsContainer.innerHTML = products
-      .map(
-        (prod) => `
+function renderProducts() {
+  const query = (searchProductInput.value || "").trim().toLowerCase();
+  const selectedCategory = categoryFilter.value || "ALL";
+
+  const filtered = (currentData.products || []).filter((prod) => {
+    const cat = (prod.category || "عام").trim();
+    const matchesCat = selectedCategory === "ALL" || cat === selectedCategory;
+    const hay = `${prod.name || ""} ${prod.description || ""} ${cat}`.toLowerCase();
+    const matchesSearch = !query || hay.includes(query);
+    return matchesCat && matchesSearch;
+  });
+
+  if (filtered.length === 0) {
+    productsContainer.innerHTML = `<p class="muted">لا توجد منتجات مطابقة للبحث أو التصنيف المحدد.</p>`;
+    return;
+  }
+
+  productsContainer.innerHTML = filtered
+    .map((prod) => {
+      const mediaHtml = prod.image
+        ? `<img src="${escapeHTML(prod.image)}" alt="${escapeHTML(prod.name)}" class="product-img" loading="lazy" />`
+        : `<div class="product-placeholder">لا توجد صورة</div>`;
+
+      return `
       <article class="product-card">
         <div>
-          ${prod.image ? `<img src="${escapeHTML(prod.image)}" alt="${escapeHTML(prod.name)}" class="product-img" />` : ""}
+          ${mediaHtml}
           <div class="product-meta" style="margin-top:10px;">
             <span>${escapeHTML(prod.category || "عام")}</span>
             <span class="product-price">${escapeHTML(prod.price)}</span>
           </div>
           <h3 style="margin-top:6px;font-size:17px;">${escapeHTML(prod.name)}</h3>
-          <p style="color:#9ca3af;margin-top:6px;font-size:13.5px;">${escapeHTML(prod.description)}</p>
+          <p class="muted" style="margin-top:6px;font-size:13.5px;">${escapeHTML(prod.description)}</p>
         </div>
       </article>
-    `
-      )
-      .join("");
-  }
+    `;
+    })
+    .join("");
+}
+
+function renderPublicView() {
+  const activeAds = (currentData.ads || []).filter((ad) => ad.active !== false);
+  populateCategoryOptions();
+  renderPromoAndAds(activeAds);
+  renderProducts();
 }
 
 function renderAdminLists() {
@@ -147,7 +198,6 @@ function refreshAll() {
   renderAdminLists();
 }
 
-// قراءة أولية من الملف المحلي/المنشور (مع تجاوز الكاش)
 async function loadInitialLocalJson() {
   try {
     const res = await fetch(`${DATA_PATH}?t=${Date.now()}`);
@@ -163,7 +213,6 @@ async function loadInitialLocalJson() {
   }
 }
 
-// جلب الملف و sha عبر GitHub Contents API
 async function fetchFileFromGitHub() {
   saveGhMeta();
   const owner = ghOwnerInput.value.trim();
@@ -209,7 +258,6 @@ async function fetchFileFromGitHub() {
   }
 }
 
-// حفظ التعديلات مباشرة إلى data/products.json في GitHub
 async function saveFileToGitHub() {
   saveGhMeta();
   const owner = ghOwnerInput.value.trim();
@@ -226,7 +274,6 @@ async function saveFileToGitHub() {
   const url = `https://api.github.com/repos/${encodeURIComponent(owner)}/${encodeURIComponent(repo)}/contents/${DATA_PATH}`;
 
   try {
-    // إذا لم يكن sha محفوظاً بعد، نحاول جلبه أولاً لتجنب تعارض التحديث
     if (!currentFileSha) {
       const checkRes = await fetch(`${url}?ref=${encodeURIComponent(branch)}`, {
         headers: {
@@ -316,7 +363,7 @@ addProductForm.addEventListener("submit", (e) => {
   addProductForm.reset();
   document.getElementById("prodCategory").value = "عام";
   refreshAll();
-  setStatus("تمت إضافة المنتج للذاكرة — اضغط (حفظ التعديلات في GitHub) لتثبيته.");
+  setStatus("تمت إضافة المنتج للذاكرة — اضغط (حفظ التعديلات في GitHub) لتثبيتها.");
 });
 
 adminAdsList.addEventListener("click", (e) => {
@@ -337,6 +384,8 @@ adminProductsList.addEventListener("click", (e) => {
   setStatus("تم حذف المنتج من الذاكرة — احفظ التغييرات لتطبيقها في GitHub.");
 });
 
+searchProductInput.addEventListener("input", renderProducts);
+categoryFilter.addEventListener("change", renderProducts);
 loadFromApiBtn.addEventListener("click", fetchFileFromGitHub);
 saveToApiBtn.addEventListener("click", saveFileToGitHub);
 
