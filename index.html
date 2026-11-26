@@ -7,6 +7,14 @@
   <link rel="stylesheet" href="css/style.css" />
 </head>
 <body>
+  <!-- شريط إعلان علوي بارز -->
+  <div id="topPromoBanner" class="promo-banner hidden">
+    <div class="container promo-inner">
+      <span id="promoBadge" class="promo-tag">إعلان</span>
+      <p id="promoText" class="promo-text"></p>
+    </div>
+  </div>
+
   <header class="topbar">
     <div class="container topbar-inner">
       <div class="brand">بوابة المنتجات والإعلانات</div>
@@ -20,17 +28,29 @@
 
   <main class="container main-content">
     <!-- قسم الإعلانات -->
-    <section class="section-block">
+    <section class="section-block" id="adsSection">
       <div class="section-head">
-        <h2>الإعلانات</h2>
+        <h2>الإعلانات والعروض</h2>
       </div>
       <div id="adsContainer" class="ads-grid"></div>
     </section>
 
     <!-- قسم المنتجات -->
-    <section class="section-block">
-      <div class="section-head">
+    <section class="section-block" id="productsSection">
+      <div class="section-head products-toolbar">
         <h2>المنتجات</h2>
+        <div class="filter-controls">
+          <input
+            type="search"
+            id="searchProductInput"
+            class="search-input"
+            placeholder="ابحث عن منتج..."
+            aria-label="ابحث عن منتج"
+          />
+          <select id="categoryFilter" class="select-input" aria-label="تصفية حسب التصنيف">
+            <option value="ALL">كل التصنيفات</option>
+          </select>
+        </div>
       </div>
       <div id="productsContainer" class="products-grid"></div>
     </section>
@@ -38,7 +58,7 @@
     <!-- واجهة تسجيل الدخول -->
     <section class="auth-card hidden" id="loginCard">
       <div class="auth-header">
-        <span class="badge">المرحلة 2 — صلاحية الأدمن</span>
+        <span class="badge">صلاحية الأدمن</span>
         <h1>تسجيل الدخول</h1>
         <p>أدخل بيانات الأدمن للوصول إلى التعديل عبر GitHub API</p>
       </div>
@@ -95,7 +115,6 @@
       <p id="adminStatus" class="status-msg" role="status" aria-live="polite"></p>
 
       <div class="editor-grid">
-        <!-- إضافة إعلان -->
         <form id="addAdForm" class="editor-card">
           <h3>إضافة إعلان جديد</h3>
           <div class="field-group">
@@ -113,7 +132,6 @@
           <button type="submit" class="btn btn-primary">إضافة للقائمة</button>
         </form>
 
-        <!-- إضافة منتج -->
         <form id="addProductForm" class="editor-card">
           <h3>إضافة منتج جديد</h3>
           <div class="field-group">
@@ -151,9 +169,53 @@
         </div>
       </div>
     </section>
+
+    <!-- نموذج التواصل عبر Web3Forms -->
+    <section class="section-block contact-section" id="contactSection">
+      <div class="contact-card">
+        <div class="section-head">
+          <h2>تواصل معنا</h2>
+          <p class="muted">أرسل استفسارك أو طلبك وسنصلك عبر البريد الإلكتروني.</p>
+        </div>
+
+        <form id="contactForm" class="contact-form">
+          <!-- استبدل القيمة بمفتاح Access Key الخاص بك من Web3Forms -->
+          <input type="hidden" name="access_key" value="d24a8494-2dd3-4334-92de-5f7c3697b8cc" />
+          <input type="hidden" name="subject" value="رسالة جديدة من بوابة المنتجات والإعلانات" />
+          <input type="checkbox" name="botcheck" class="hidden" style="display:none;" />
+
+          <div class="contact-row">
+            <div class="field-group">
+              <label for="senderName">الاسم</label>
+              <input type="text" id="senderName" name="name" required />
+            </div>
+            <div class="field-group">
+              <label for="senderEmail">البريد الإلكتروني</label>
+              <input type="email" id="senderEmail" name="email" required />
+            </div>
+          </div>
+
+          <div class="field-group">
+            <label for="senderMessage">الرسالة</label>
+            <textarea id="senderMessage" name="message" rows="4" required></textarea>
+          </div>
+
+          <p id="contactStatus" class="status-msg" role="status" aria-live="polite"></p>
+          <button type="submit" class="btn btn-primary" id="contactSubmitBtn">إرسال الرسالة</button>
+        </form>
+      </div>
+    </section>
   </main>
+
+  <footer class="site-footer">
+    <div class="container footer-inner">
+      <span>بوابة المنتجات والإعلانات</span>
+      <span class="muted">مدعومة بـ GitHub JSON + Vercel + Web3Forms</span>
+    </div>
+  </footer>
 
   <script src="js/auth.js"></script>
   <script src="js/github-db.js"></script>
+  <script src="js/contact.js"></script>
 </body>
 </html>
